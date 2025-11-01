@@ -55,7 +55,7 @@ export async function retry<T>(
 
       console.warn(
         `[Retry] Attempt ${attempt + 1}/${maxAttempts} failed. Retrying in ${delay}ms...`,
-        error.message
+        (error as Error).message || 'Unknown error'
       );
 
       await sleep(delay);
