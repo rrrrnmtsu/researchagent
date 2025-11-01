@@ -6,7 +6,17 @@ import { join } from 'path';
 import pLimit from 'p-limit';
 import { searchWeb } from './modules/search.js';
 import { fetchAndExtract } from './modules/fetch.js';
-import { extractWithLLM } from './modules/llm-extract.js';
+// LLMプロバイダ選択（.envのLLM_PROVIDERで切り替え）
+// 'openai' → llm-extract.js
+// 'anthropic' → llm-extract-claude.js
+// 'ollama' → llm-extract-ollama.js
+const llmProvider = process.env.LLM_PROVIDER || 'openai';
+const llmModule =
+  llmProvider === 'anthropic' ? './modules/llm-extract-claude.js' :
+  llmProvider === 'ollama' ? './modules/llm-extract-ollama.js' :
+  './modules/llm-extract.js';
+
+const { extractWithLLM } = await import(llmModule);
 import { normalizeRecord, deduplicateRecords, assignIds } from './modules/normalize.js';
 import {
   ensureOutputDir,
