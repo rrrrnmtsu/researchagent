@@ -1,0 +1,29 @@
+{
+  "priority": [
+    "n8n.io",
+    "community.n8n.io",
+    "qiita.com",
+    "zenn.dev",
+    "note.com",
+    "github.com",
+    "medium.com",
+    "youtube.com",
+    "reddit.com",
+    "dev.to",
+    "hashnode.com"
+  ],
+  "blocked": [
+    "spam-site.com",
+    "low-quality-aggregator.com"
+  ],
+  "primary_info_domains": [
+    "n8n.io",
+    "community.n8n.io",
+    "qiita.com",
+    "zenn.dev",
+    "note.com",
+    "reddit.com",
+    "youtube.com",
+    "github.com"
+  ]
+}
