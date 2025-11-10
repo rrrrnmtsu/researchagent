@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import * as yaml from 'js-yaml';
 import { ResearchTemplate } from './types.js';
@@ -95,7 +95,6 @@ export class TemplateLoader {
       return [];
     }
 
-    const { readdirSync, statSync } = require('fs');
     const entries = readdirSync(templatesDir);
 
     return entries.filter((entry: string) => {
