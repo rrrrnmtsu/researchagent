@@ -1,0 +1,291 @@
+name: "n8n Case Study Research"
+version: "1.0.0"
+description: "n8n事例を自動収集し、構造化されたMarkdown表・CSV・ピボット集計・ROI上位表を生成する"
+author: "Research Agent Framework"
+
+# 検索設定
+search:
+  queries:
+    jp:
+      - "n8n 事例"
+      - "n8n 導入事例"
+      - "n8n 自動化 ワークフロー"
+      - "n8n 成功事例"
+      - "n8n 不動産"
+      - "n8n ホテル"
+      - "n8n 飲食"
+      - "n8n ナイトクラブ"
+      - "n8n 予約 価格 在庫"
+    en:
+      - "n8n case study"
+      - "n8n workflow automation"
+      - "n8n success stories"
+      - "n8n real estate"
+      - "n8n hotel PMS OTA"
+      - "n8n restaurant POS booking"
+      - "n8n nightclub VIP CRM bottle inventory"
+      - "n8n ecommerce shopify woocommerce"
+
+  priority_domains:
+    - "n8n.io"
+    - "community.n8n.io"
+    - "qiita.com"
+    - "zenn.dev"
+    - "note.com"
+    - "medium.com"
+
+  blocked_domains: []
+
+  primary_info_domains:
+    - "n8n.io"
+    - "community.n8n.io"
+
+# データスキーマ定義
+schema:
+  record_name: "CaseStudyRecord"
+  deduplication_key: "重複判定キー"
+
+  fields:
+    - name: "ID"
+      type: "string"
+      required: true
+      description: "3桁ゼロパディング（001, 002, ...）"
+
+    - name: "タイトル"
+      type: "string"
+      required: true
+      description: "事例名"
+
+    - name: "業種"
+      type: "enum"
+      required: true
+      description: "業種分類"
+      values:
+        - "不動産"
+        - "ホテル"
+        - "飲食"
+        - "ナイト"
+        - "EC・小売"
+        - "医療・ヘルスケア"
+        - "金融・財務"
+        - "WEBマーケティング"
+        - "IT・ソフトウェア開発"
+        - "物流"
+        - "製造業"
+        - "教育・Eラーニング"
+        - "人材・採用"
+        - "保険"
+        - "その他"
+
+    - name: "サブ領域"
+      type: "string"
+      required: false
+      description: "予約管理、在庫、PMS/OTA、POS、CRM等"
+
+    - name: "目的/KPI"
+      type: "string"
+      required: true
+      description: "数値があれば含む（例: 工数50%削減）"
+
+    - name: "トリガー種別"
+      type: "string"
+      required: true
+      description: "Webhook/Cron/IMAP/API等（複数可、'/'区切り）"
+
+    - name: "入力ソース"
+      type: "string"
+      required: true
+      description: "SaaS/DB/ファイル/フォーム名"
+
+    - name: "出力先"
+      type: "string"
+      required: true
+      description: "SaaS/DB/通知/シート/BI"
+
+    - name: "主要n8nノード"
+      type: "string"
+      required: true
+      description: "3-10個（例: Webhook, HTTP Request, Code, Slack）"
+
+    - name: "外部API/連携ツール"
+      type: "string"
+      required: true
+      description: "固有名詞（例: Shopify, Airtable, Notion）"
+
+    - name: "ワークフロー概要"
+      type: "string"
+      required: true
+      description: "150字程度の概要"
+
+    - name: "実装難易度"
+      type: "enum"
+      required: true
+      description: "1-5の難易度"
+      values: ["1", "2", "3", "4", "5"]
+
+    - name: "規模目安"
+      type: "string"
+      required: false
+      description: "頻度/件数/店舗等"
+
+    - name: "成果/ROI"
+      type: "string"
+      required: true
+      description: "定量優先、なければ定性"
+
+    - name: "運用上のリスク/前提"
+      type: "string"
+      required: false
+      description: "認証、レート制限、監視要件等"
+
+    - name: "地域/言語"
+      type: "string"
+      required: false
+      description: "JP/日本語、Global/英語等"
+
+    - name: "出典URL"
+      type: "string"
+      required: true
+      description: "事例のURL"
+
+    - name: "情報の種類"
+      type: "enum"
+      required: true
+      description: "情報の信頼性"
+      values: ["一次情報", "二次情報", "推定"]
+
+    - name: "公開日/更新日"
+      type: "string"
+      required: false
+      description: "YYYY-MM-DD形式"
+
+    - name: "重複判定キー"
+      type: "string"
+      required: true
+      description: "<組織/製品/ユースケース/出典ドメイン>"
+
+# LLM抽出設定
+extraction:
+  system_prompt: |
+    あなたはB2Bオートメーション調査員です。
+    与えられたWebページの内容から、n8nワークフロー事例の情報を正確に抽出してください。
+
+    ## 重要な指示
+
+    1. **事実ベース原則**: 本文に明記されている情報のみを抽出してください
+    2. **推定の扱い**: 本文に明記がない項目は「推定: ...」で始めて補完してください
+    3. **情報の種類の判定**:
+       - 抽出した項目に「推定:」で始まるものが1つでもある場合は「情報の種類」を「推定」にしてください
+       - そうでない場合は、提供された初期判定（一次情報/二次情報）をそのまま使用してください
+
+    ## 業種の正規化リスト
+    不動産/ホテル/飲食/ナイト/EC・小売/医療・ヘルスケア/金融・財務/WEBマーケティング/IT・ソフトウェア開発/物流/製造業/教育・Eラーニング/人材・採用/保険/その他
+
+    ## トリガー種別
+    Webhook/Cron/Schedule/IMAP/API/Watch/Event/Polling（複数の場合は"/"区切り）
+
+    ## 実装難易度（1-5）
+    1: テンプレ/単純処理
+    2: 単一SaaS連携＋簡易条件
+    3: 複数SaaS、条件分岐、データ整形
+    4: 認証管理、再試行、監視、冪等
+    5: 大規模/高頻度/複雑依存
+
+    ## 主要n8nノードの推定
+    本文に明記がない場合、以下のような推定を行ってください：
+    - Webhook（トリガー）
+    - HTTP Request（API呼び出し）
+    - Code（データ変換・ロジック）
+    - Google Sheets / Airtable / Notion（データ保存）
+    - Slack / Discord（通知）
+    - If / Switch（条件分岐）
+    - Merge / Split（データ操作）
+
+    ## 重複判定キー
+    <組織名/製品名/ユースケース/出典ドメイン> の形式で生成してください
+    例: "acmehotel_pms_booking_automation_n8n.io"
+    - 小文字英数字とアンダースコアのみ
+    - 最大200文字
+
+    ## 出力フォーマット
+    日本語キーの20項目JSONオブジェクトを返してください。
+
+  user_prompt_template: |
+    以下のWebページから、n8nワークフロー事例の情報を抽出してください。
+
+    ## URL
+    {{url}}
+
+    ## 初期判定された情報の種類
+    {{info_type}}（ただし、抽出内容に「推定:」が含まれる場合は「推定」に上書きしてください）
+
+    ## メタデータ
+    - 公開日: {{published_date}}
+    - 更新日: {{updated_date}}
+    - 言語: {{detected_lang}}
+    - 地域: {{detected_region}}
+
+    ## 本文（最大6000文字）
+    {{content}}
+
+    ---
+
+    上記の内容から、20項目のJSONオブジェクトを生成してください。
+    本文に明記がない項目は「推定: ...」で補完し、その場合は「情報の種類」を「推定」にしてください。
+
+# 正規化・重複排除設定
+normalization:
+  deduplication_strategy: "key_based"  # key_based, similarity, hybrid
+
+  # 業種マッピング（曖昧な表記を正規化）
+  industry_mappings:
+    不動産:
+      - "不動産"
+      - "real estate"
+      - "リアルエステート"
+      - "賃貸"
+      - "売買"
+    ホテル:
+      - "ホテル"
+      - "hotel"
+      - "宿泊"
+      - "旅館"
+      - "民泊"
+    飲食:
+      - "飲食"
+      - "restaurant"
+      - "レストラン"
+      - "カフェ"
+      - "居酒屋"
+
+# 出力設定
+output:
+  formats:
+    - type: "markdown_table"
+      rows_per_section: 50
+      include_csv: true
+    - type: "csv"
+      encoding: "utf-8-bom"
+    - type: "pivot"
+      dimensions:
+        - "業種"
+        - "トリガー種別"
+        - "情報の種類"
+    - type: "top_records"
+      sort_by: "成果/ROI"
+      limit: 20
+
+  # カスタム出力（フェーズ2専用など）
+  custom_outputs:
+    - name: "focus_industries"
+      condition: "phase === 2"
+      filter_fields: ["業種"]
+      filter_values: ["不動産", "ホテル", "飲食", "ナイト"]
+
+# 実行パラメータのデフォルト
+execution:
+  default_phase: 1
+  default_target_rows: 120
+  default_concurrency: 6
+  default_per_query: 20
+  max_content_length: 6000

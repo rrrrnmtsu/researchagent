@@ -1,0 +1,240 @@
+name: "VOD配信アニメリサーチ"
+version: "1.0.0"
+description: "VODサービスで配信中の日本アニメ作品を収集"
+author: "Research Agent Framework"
+
+# 検索設定
+search:
+  queries:
+    jp:
+      - "VOD アニメ 配信中"
+      - "Netflix アニメ 配信"
+      - "Amazon Prime Video アニメ"
+      - "Disney+ アニメ 配信"
+      - "U-NEXT アニメ"
+      - "dアニメストア 配信中"
+      - "Hulu アニメ 配信"
+      - "2024 アニメ 見放題"
+      - "2025 アニメ 配信"
+      - "独占配信 アニメ"
+      - "おすすめ アニメ VOD"
+      - "人気アニメ 配信サービス"
+    en:
+      - "anime streaming VOD"
+      - "Netflix anime 2024"
+      - "Amazon Prime anime"
+      - "Disney+ anime"
+      - "Crunchyroll anime"
+      - "anime streaming services"
+      - "exclusive anime streaming"
+
+  priority_domains:
+    - "netflix.com"
+    - "amazon.co.jp"
+    - "disneyplus.com"
+    - "hulu.jp"
+    - "video.unext.jp"
+    - "anime.dmkt-sp.jp"
+    - "crunchyroll.com"
+    - "abema.tv"
+    - "natalie.mu"
+    - "animeanime.jp"
+    - "anime-recorder.com"
+
+  blocked_domains:
+    - "torrent"
+    - "pirate"
+    - "download"
+
+  primary_info_domains:
+    - "netflix.com"
+    - "amazon.co.jp"
+    - "disneyplus.com"
+    - "hulu.jp"
+    - "video.unext.jp"
+    - "anime.dmkt-sp.jp"
+    - "crunchyroll.com"
+    - "abema.tv"
+
+# データスキーマ定義
+schema:
+  record_name: "VODAnimeRecord"
+  deduplication_key: "重複判定キー"
+
+  fields:
+    - name: "ID"
+      type: "string"
+      required: true
+      description: "3桁ゼロパディング（001, 002, ...）"
+
+    - name: "タイトル"
+      type: "string"
+      required: true
+      description: "アニメ作品名"
+
+    - name: "英語タイトル"
+      type: "string"
+      required: false
+      description: "英語タイトル（あれば）"
+
+    - name: "VODサービス"
+      type: "string"
+      required: true
+      description: "配信サービス名（Netflix, Amazon Prime Video, Disney+, Hulu, U-NEXT, dアニメストア, Crunchyroll, ABEMA等、複数の場合は'/'区切り）"
+
+    - name: "ジャンル"
+      type: "string"
+      required: true
+      description: "アクション/ファンタジー/恋愛/日常系/SF/ホラー/コメディ/異世界転生等（複数の場合は'/'区切り）"
+
+    - name: "放送年/シーズン"
+      type: "string"
+      required: true
+      description: "2024年春、2024年秋、2023年等"
+
+    - name: "話数"
+      type: "string"
+      required: false
+      description: "全12話、全24話、映画、OVA等"
+
+    - name: "あらすじ/概要"
+      type: "string"
+      required: true
+      description: "150字程度の作品概要"
+
+    - name: "配信開始日"
+      type: "string"
+      required: false
+      description: "YYYY-MM-DD形式"
+
+    - name: "配信状況"
+      type: "string"
+      required: true
+      description: "独占配信/見放題/レンタル/期間限定/同時配信等"
+
+    - name: "人気度/評価"
+      type: "string"
+      required: false
+      description: "高評価、★4.5、ランキング上位等（あれば）"
+
+    - name: "制作会社"
+      type: "string"
+      required: false
+      description: "アニメーション制作会社"
+
+    - name: "監督"
+      type: "string"
+      required: false
+      description: "監督名"
+
+    - name: "出典URL"
+      type: "string"
+      required: true
+      description: "情報源のURL"
+
+    - name: "情報の種類"
+      type: "enum"
+      required: true
+      description: "情報の信頼性"
+      values: ["一次情報", "二次情報", "推定"]
+
+    - name: "取得日"
+      type: "string"
+      required: false
+      description: "YYYY-MM-DD形式"
+
+    - name: "重複判定キー"
+      type: "string"
+      required: true
+      description: "<タイトル正規化/VODサービス/出典ドメイン>"
+
+# LLM抽出設定
+extraction:
+  system_prompt: |
+    あなたはVODサービスとアニメに詳しい調査員です。
+    与えられたWebページの内容から、VOD配信アニメ作品の情報を正確に抽出してください。
+
+    ## 重要な指示
+
+    1. **事実ベース原則**: 本文に明記されている情報のみを抽出してください
+    2. **推定の扱い**: 本文に明記がない項目は「推定: ...」で始めて補完してください
+    3. **情報の種類の判定**:
+       - 抽出した項目に「推定:」で始まるものが1つでもある場合は「情報の種類」を「推定」にしてください
+       - そうでない場合は、提供された初期判定（一次情報/二次情報）をそのまま使用してください
+
+    ## VODサービスの正規化
+    Netflix/Amazon Prime Video/Disney+/Hulu/U-NEXT/dアニメストア/Crunchyroll/ABEMA/FOD/Lemino/その他
+    複数のサービスで配信している場合は"/"区切りで列挙してください。
+
+    ## ジャンルの正規化
+    アクション/ファンタジー/恋愛/日常系/SF/ホラー/コメディ/異世界転生/歴史/スポーツ/音楽/ミステリー/バトル/学園/その他
+    複数のジャンルに該当する場合は"/"区切りで列挙してください。
+
+    ## 配信状況の種類
+    - 独占配信: そのサービスでのみ配信
+    - 見放題: サブスクリプション内で視聴可能
+    - レンタル: 追加課金が必要
+    - 期間限定: 配信期限あり
+    - 同時配信: TV放送と同時配信
+
+    ## 重複判定キー
+    <タイトル正規化/VODサービス/出典ドメイン> の形式で生成してください
+    例: "shingeki_no_kyojin_netflix_netflix.com"
+    - 小文字英数字とアンダースコアのみ
+    - タイトルはローマ字化または英語タイトル
+    - 最大200文字
+
+    ## 出力フォーマット
+    日本語キーのJSONオブジェクトを返してください。
+
+  user_prompt_template: |
+    以下のWebページから、VOD配信アニメ作品の情報を抽出してください。
+
+    ## URL
+    {{url}}
+
+    ## 初期判定された情報の種類
+    {{info_type}}（ただし、抽出内容に「推定:」が含まれる場合は「推定」に上書きしてください）
+
+    ## メタデータ
+    - 公開日: {{published_date}}
+    - 更新日: {{updated_date}}
+    - 言語: {{detected_lang}}
+
+    ## 本文（最大6000文字）
+    {{content}}
+
+    ---
+
+    上記の内容から、定義されたフィールドのJSONオブジェクトを生成してください。
+    本文に明記がない項目は「推定: ...」で補完し、その場合は「情報の種類」を「推定」にしてください。
+
+# 正規化・重複排除設定
+normalization:
+  deduplication_strategy: "key_based"
+
+  # タイトル正規化マッピング
+  title_normalization:
+    - pattern: "【.*?】"
+      replacement: ""
+    - pattern: "\\(.*?\\)"
+      replacement: ""
+    - pattern: "\\s+"
+      replacement: "_"
+
+# 出力設定
+output:
+  formats:
+    - type: "markdown_table"
+      rows_per_section: 50
+      include_csv: true
+    - type: "csv"
+      encoding: "utf-8-bom"
+    - type: "json"
+
+# 実行パラメータのデフォルト
+execution:
+  default_target_rows: 100
+  default_concurrency: 6
+  default_per_query: 20
+  max_content_length: 6000

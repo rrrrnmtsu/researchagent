@@ -1,13 +1,15 @@
 {
-  "name": "n8n-research-agent",
-  "version": "1.0.0",
-  "description": "n8n事例収集・表出力自動化エージェント",
+  "name": "research-agent-framework",
+  "version": "2.0.0",
+  "description": "汎用リサーチエージェントフレームワーク - テンプレートベースで様々なトピックをリサーチ",
   "main": "dist/cli.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node dist/cli.js",
     "dev": "tsx src/cli.ts",
+    "research": "tsx src/research-cli.ts",
+    "research:build": "node dist/research-cli.js",
     "test": "jest",
     "lint": "eslint src/**/*.ts"
   },
@@ -21,12 +23,14 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",
+    "@types/js-yaml": "^4.0.9",
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12",
     "commander": "^11.1.0",
     "csv-stringify": "^6.4.0",
     "date-fns": "^3.0.0",
     "dotenv": "^16.3.0",
+    "js-yaml": "^4.1.0",
     "openai": "^4.20.0",
     "p-limit": "^5.0.0"
   },
